@@ -1,6 +1,8 @@
 """Telegram Bot Main Program"""
 import logging
+import asyncio
 from functools import partial
+from aiohttp import web
 
 from telegram.ext import Application, CommandHandler
 
@@ -46,6 +48,25 @@ async def error_handler(update: object, context) -> None:
     logger.exception("Exception occurred while handling update: %s", context.error, exc_info=context.error)
 
 
+async def health_check(request):
+    """Health check endpoint for container orchestration platforms"""
+    return web.Response(text="OK", status=200)
+
+
+async def start_health_server():
+    """Start health check HTTP server on port 8000"""
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    app.router.add_get("/health", health_check)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8000)
+    await site.start()
+    logger.info("Health check server started on port 8000")
+    return runner
+
+
 def main():
     """Main function"""
     # Initialize database (SQLite in-memory, no external DB required)
@@ -89,7 +110,22 @@ def main():
     application.add_error_handler(error_handler)
 
     logger.info("Bot is starting...")
-    application.run_polling(drop_pending_updates=True)
+    
+    # Start health check server and bot together
+    async def run():
+        # Start health check server
+        await start_health_server()
+        
+        # Start bot with polling
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling(drop_pending_updates=True)
+        
+        # Keep running
+        await asyncio.Event().wait()
+    
+    # Run the async function
+    asyncio.run(run())
 
 
 if __name__ == "__main__":

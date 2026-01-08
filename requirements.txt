@@ -5,4 +5,5 @@ reportlab>=4.0.0
 playwright==1.48.0
 psutil>=5.9.0
 python-dotenv>=1.0.0
+aiohttp>=3.9.0
 # xhtml2pdf>=0.2.15  # Optional: Only needed for k12 teacher verification
