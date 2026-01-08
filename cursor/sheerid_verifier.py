@@ -215,6 +215,16 @@ class SheerIDVerifier:
                 logger.info(f"✅ Step 3 completed: {step3_data.get('currentStep')}")
                 current_step = step3_data.get("currentStep", current_step)
 
+            # Skip idCheckLoop if present (automatic identity verification step)
+            if current_step == "idCheckLoop":
+                logger.info("Step 3.5/4: Skip idCheckLoop (automatic check)...")
+                step3_5_data, _ = self._sheerid_request(
+                    "DELETE",
+                    f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/idCheckLoop",
+                )
+                logger.info(f"✅ idCheckLoop skipped: {step3_5_data.get('currentStep')}")
+                current_step = step3_5_data.get("currentStep", current_step)
+
             # Log current step before document upload
             logger.info(f"Current step before docUpload: {current_step}")
             
