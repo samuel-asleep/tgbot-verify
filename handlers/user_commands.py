@@ -1,4 +1,4 @@
-"""用户命令处理器"""
+"""User command handlers"""
 import logging
 from typing import Optional
 
@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import ADMIN_USER_ID
-from database_mysql import Database
+from database_sqlite import Database
 from utils.checks import reject_group_command
 from utils.messages import (
     get_welcome_message,
