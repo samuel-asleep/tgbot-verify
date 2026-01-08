@@ -1,4 +1,4 @@
-"""SheerID 学生验证主程序 (Cursor.com)"""
+"""SheerID Student Verification Program (Cursor.com)"""
 import re
 import random
 import logging
@@ -9,7 +9,7 @@ from . import config
 from .name_generator import NameGenerator, generate_email, generate_birth_date
 from .img_generator import generate_psu_email, generate_image
 
-# 配置日志
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(levelname)s] %(message)s',
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class SheerIDVerifier:
-    """SheerID 学生身份验证器 (Cursor.com)"""
+    """SheerID Student Identity Verifier (Cursor.com)"""
 
     def __init__(self, verification_id: str, proxy: Optional[str] = None):
         self.verification_id = verification_id
@@ -42,41 +42,41 @@ class SheerIDVerifier:
 
     @staticmethod
     def normalize_url(url: str) -> str:
-        """规范化 URL（保留原样）"""
+        """Normalize URL (keep as-is)"""
         return url
 
     @staticmethod
     def parse_verification_id(url: str) -> Optional[str]:
-        """解析 verificationId 或 userId 参数"""
-        # 先尝试匹配 verificationId
+        """Parse verificationId or userId parameter"""
+        # First try to match verificationId
         match = re.search(r"verificationId=([a-f0-9]+)", url, re.IGNORECASE)
         if match:
             return match.group(1)
         
-        # 如果没有 verificationId，尝试匹配 userId（cursor.com 使用这种格式）
+        # If no verificationId, try to match userId (cursor.com uses this format)
         match = re.search(r"userId=([^&]+)", url, re.IGNORECASE)
         if match:
-            # userId 本身不是 verificationId，需要通过 API 创建一个
-            # 返回 None，让调用方知道需要创建新的 verification
+            # userId itself is not verificationId, need to create one via API
+            # Return None to let caller know a new verification needs to be created
             return None
         
         return None
     
     @staticmethod
     def parse_user_id(url: str) -> Optional[str]:
-        """解析 userId 参数（cursor.com 特有）"""
+        """Parse userId parameter (cursor.com specific)"""
         match = re.search(r"userId=([^&]+)", url, re.IGNORECASE)
         if match:
             return match.group(1)
         return None
     
     def create_verification(self, user_id: Optional[str] = None) -> str:
-        """通过 programId 创建新的 verificationId"""
+        """Create new verificationId via programId"""
         body = {
             "programId": config.PROGRAM_ID,
         }
         
-        # 如果有 userId，添加到请求中
+        # If userId exists, add it to the request
         if user_id:
             body["metadata"] = {
                 "userId": user_id
@@ -87,13 +87,13 @@ class SheerIDVerifier:
                 "POST", f"{config.MY_SHEERID_URL}/rest/v2/verification/", body
             )
             if status != 200 or not isinstance(data, dict) or not data.get("verificationId"):
-                raise Exception(f"创建 verification 失败 (状态码 {status}): {data}")
+                raise Exception(f"Failed to create verification (Status码 {status}): {data}")
             
             self.verification_id = data["verificationId"]
             logger.info(f"✅ 获取 verificationId: {self.verification_id}")
             return self.verification_id
         except Exception as e:
-            logger.error(f"创建 verification 失败: {e}")
+            logger.error(f"Failed to create verification: {e}")
             raise
 
     def _sheerid_request(
@@ -114,7 +114,7 @@ class SheerIDVerifier:
                 data = response.text
             return data, response.status_code
         except Exception as e:
-            logger.error(f"SheerID 请求失败: {e}")
+            logger.error(f"SheerID request failed: {e}")
             raise
 
     def _upload_to_s3(self, upload_url: str, img_data: bytes) -> bool:
@@ -126,7 +126,7 @@ class SheerIDVerifier:
             )
             return 200 <= response.status_code < 300
         except Exception as e:
-            logger.error(f"S3 上传失败: {e}")
+            logger.error(f"S3 upload failed: {e}")
             return False
 
     def verify(
@@ -137,7 +137,7 @@ class SheerIDVerifier:
         birth_date: str = None,
         school_id: str = None,
     ) -> Dict:
-        """执行验证流程，移除状态轮询以减少耗时"""
+        """Execute verification flow, remove status polling to reduce time"""
         try:
             current_step = "initial"
 
@@ -154,20 +154,20 @@ class SheerIDVerifier:
             if not birth_date:
                 birth_date = generate_birth_date()
 
-            logger.info(f"学生信息: {first_name} {last_name}")
-            logger.info(f"邮箱: {email}")
-            logger.info(f"学校: {school['name']}")
-            logger.info(f"生日: {birth_date}")
-            logger.info(f"验证 ID: {self.verification_id}")
+            logger.info(f"Student info: {first_name} {last_name}")
+            logger.info(f"Email: {email}")
+            logger.info(f"School: {school['name']}")
+            logger.info(f"Birth date: {birth_date}")
+            logger.info(f"Verification ID: {self.verification_id}")
 
-            # 生成学生证 PNG
-            logger.info("步骤 1/4: 生成学生证 PNG...")
+            # Generate student ID card PNG
+            logger.info("Step 1/4: Generate student ID card PNG...")
             img_data = generate_image(first_name, last_name, school_id)
             file_size = len(img_data)
             logger.info(f"✅ PNG 大小: {file_size / 1024:.2f}KB")
 
-            # 提交学生信息
-            logger.info("步骤 2/4: 提交学生信息...")
+            # 提交Student info
+            logger.info("Step 2/4: 提交Student info...")
             step2_body = {
                 "firstName": first_name,
                 "lastName": last_name,
@@ -197,26 +197,26 @@ class SheerIDVerifier:
             )
 
             if step2_status != 200:
-                raise Exception(f"步骤 2 失败 (状态码 {step2_status}): {step2_data}")
+                raise Exception(f"Step 2 Failed (Status码 {step2_status}): {step2_data}")
             if step2_data.get("currentStep") == "error":
                 error_msg = ", ".join(step2_data.get("errorIds", ["Unknown error"]))
-                raise Exception(f"步骤 2 错误: {error_msg}")
+                raise Exception(f"Step 2 错误: {error_msg}")
 
-            logger.info(f"✅ 步骤 2 完成: {step2_data.get('currentStep')}")
+            logger.info(f"✅ Step 2 完成: {step2_data.get('currentStep')}")
             current_step = step2_data.get("currentStep", current_step)
 
             # 跳过 SSO（如需要）
             if current_step in ["sso", "collectStudentPersonalInfo"]:
-                logger.info("步骤 3/4: 跳过 SSO 验证...")
+                logger.info("Step 3/4: Skip SSO verification...")
                 step3_data, _ = self._sheerid_request(
                     "DELETE",
                     f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/sso",
                 )
-                logger.info(f"✅ 步骤 3 完成: {step3_data.get('currentStep')}")
+                logger.info(f"✅ Step 3 完成: {step3_data.get('currentStep')}")
                 current_step = step3_data.get("currentStep", current_step)
 
             # 上传文档并完成提交
-            logger.info("步骤 4/4: 请求并上传文档...")
+            logger.info("Step 4/4: Request and upload document...")
             step4_body = {
                 "files": [
                     {"fileName": "student_card.png", "mimeType": "image/png", "fileSize": file_size}
@@ -231,56 +231,56 @@ class SheerIDVerifier:
                 raise Exception("未能获取上传 URL")
 
             upload_url = step4_data["documents"][0]["uploadUrl"]
-            logger.info("✅ 获取上传 URL 成功")
+            logger.info("✅ Get upload URL success")
             if not self._upload_to_s3(upload_url, img_data):
-                raise Exception("S3 上传失败")
-            logger.info("✅ 学生证上传成功")
+                raise Exception("S3 upload failed")
+            logger.info("✅ Student ID card uploaded successfully")
 
             step6_data, _ = self._sheerid_request(
                 "POST",
                 f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/completeDocUpload",
             )
-            logger.info(f"✅ 文档提交完成: {step6_data.get('currentStep')}")
+            logger.info(f"✅ Document submission completed: {step6_data.get('currentStep')}")
             final_status = step6_data
 
-            # 不做状态轮询，直接返回等待审核
+            # 不做Status轮询，直接返回等待审核
             return {
                 "success": True,
                 "pending": True,
-                "message": "文档已提交，等待审核",
+                "message": "Document submitted, awaiting review",
                 "verification_id": self.verification_id,
                 "redirect_url": final_status.get("redirectUrl"),
                 "status": final_status,
             }
 
         except Exception as e:
-            logger.error(f"❌ 验证失败: {e}")
+            logger.error(f"❌ Verification failed: {e}")
             return {"success": False, "message": str(e), "verification_id": self.verification_id}
 
 
 def main():
-    """主函数 - 命令行界面"""
+    """Main function - Command line interface"""
     import sys
     import os
 
     print("=" * 60)
-    print("SheerID 学生身份验证工具 - Cursor.com (Python版)")
+    print("SheerID Student Identity Verification Tool - Cursor.com (Python版)")
     print("=" * 60)
     print()
 
     if len(sys.argv) > 1:
         url = sys.argv[1]
     else:
-        url = input("请输入 SheerID 验证 URL: ").strip()
+        url = input("Please enter SheerID verification URL: ").strip()
 
     if not url:
-        print("❌ 错误: 未提供 URL")
+        print("❌ Error: URL not provided")
         sys.exit(1)
 
     # Support optional proxy via environment variable
     proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('HTTP_PROXY')
     if proxy:
-        print(f"🔧 使用代理: {proxy}")
+        print(f"🔧 Using proxy: {proxy}")
         print()
 
     verification_id = SheerIDVerifier.parse_verification_id(url)
@@ -289,18 +289,18 @@ def main():
     verifier = SheerIDVerifier(verification_id or "", proxy=proxy)
     
     if not verification_id and user_id:
-        print(f"✅ 解析到 userId: {user_id}")
-        print("⚙️ 正在创建新的 verification...")
+        print(f"✅ Parsed userId: {user_id}")
+        print("⚙️ Creating new verification...")
         try:
             verification_id = verifier.create_verification(user_id)
-            print(f"✅ 已创建 verificationId: {verification_id}")
+            print(f"✅ Created verificationId: {verification_id}")
         except Exception as e:
-            print(f"❌ 创建失败: {e}")
+            print(f"❌ Creation failed: {e}")
             sys.exit(1)
     elif verification_id:
-        print(f"✅ 解析到验证 ID: {verification_id}")
+        print(f"✅ 解析到Verification ID: {verification_id}")
     else:
-        print("❌ 错误: 无效的验证 ID 或 userId 格式")
+        print("❌ 错误: 无效的Verification ID 或 userId 格式")
         sys.exit(1)
 
     print()
@@ -309,12 +309,12 @@ def main():
 
     print()
     print("=" * 60)
-    print("验证结果:")
+    print("Verification Result:")
     print("=" * 60)
-    print(f"状态: {'✅ 成功' if result['success'] else '❌ 失败'}")
-    print(f"消息: {result['message']}")
+    print(f"Status: {'✅ Success' if result['success'] else '❌ Failed'}")
+    print(f"Message: {result['message']}")
     if result.get("redirect_url"):
-        print(f"跳转 URL: {result['redirect_url']}")
+        print(f"Redirect URL: {result['redirect_url']}")
     print("=" * 60)
 
     return 0 if result["success"] else 1

@@ -1,9 +1,9 @@
-"""随机名字生成器"""
+"""Random Name Generator"""
 import random
 
 
 class NameGenerator:
-    """英文名字生成器"""
+    """English Name Generator"""
     
     ROOTS = {
         'prefixes': ['Al', 'Bri', 'Car', 'Dan', 'El', 'Fer', 'Gar', 'Har', 'Jes', 'Kar', 
@@ -35,7 +35,7 @@ class NameGenerator:
     
     @classmethod
     def _generate_component(cls, pattern):
-        """根据模式生成名字组件"""
+        """Generate name components based on pattern"""
         components = []
         for part in pattern:
             if part == 'prefix':
@@ -61,16 +61,16 @@ class NameGenerator:
     
     @classmethod
     def _format_name(cls, name):
-        """格式化名字（首字母大写）"""
+        """Format name (capitalize first letter)"""
         return name.capitalize()
     
     @classmethod
     def generate(cls):
         """
-        生成随机英文名字
+        Generate random English name
         
         Returns:
-            dict: 包含 first_name, last_name, full_name
+            dict: Contains first_name, last_name, full_name
         """
         first_name_pattern = random.choice(cls.PATTERNS['first_name'])
         last_name_pattern = random.choice(cls.PATTERNS['last_name'])
@@ -87,13 +87,13 @@ class NameGenerator:
 
 def generate_email(school_domain='MIT.EDU'):
     """
-    生成随机学校邮箱
+    Generate random school email
     
     Args:
-        school_domain: 学校域名
+        school_domain: School domain
     
     Returns:
-        str: 邮箱地址
+        str: Email address
     """
     chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     username = ''.join(random.choice(chars) for _ in range(8))
@@ -102,10 +102,10 @@ def generate_email(school_domain='MIT.EDU'):
 
 def generate_birth_date():
     """
-    生成随机生日（2000-2005年）
+    Generate random birth date (2000-2005)
     
     Returns:
-        str: YYYY-MM-DD 格式的日期
+        str: YYYY-MM-DD format date
     """
     year = 2000 + random.randint(0, 5)
     month = str(random.randint(1, 12)).zfill(2)

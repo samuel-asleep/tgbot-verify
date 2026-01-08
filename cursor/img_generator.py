@@ -1,17 +1,17 @@
-"""PNG 学生证生成模块 - Penn State LionPATH"""
+"""PNG Student ID Card Generation Module - Penn State LionPATH"""
 import random
 from datetime import datetime
 
 
 def generate_psu_id():
-    """生成随机 PSU ID (9位数字)"""
+    """Generate random PSU ID (9 digits)"""
     return f"9{random.randint(10000000, 99999999)}"
 
 
 def generate_psu_email(first_name, last_name):
     """
-    生成 PSU 邮箱
-    格式: firstName.lastName + 3-4位数字 @psu.edu
+    Generate PSU email
+    Format: firstName.lastName + 3-4 digits @psu.edu
     """
     digit_count = random.choice([3, 4])
     digits = ''.join([str(random.randint(0, 9)) for _ in range(digit_count)])
@@ -21,12 +21,12 @@ def generate_psu_email(first_name, last_name):
 
 def generate_html(first_name, last_name, school_id='2565'):
     """
-    生成 Penn State LionPATH HTML
+    Generate Penn State LionPATH HTML
 
     Args:
-        first_name: 名字
-        last_name: 姓氏
-        school_id: 学校 ID
+        first_name: First name
+        last_name: Last name
+        school_id: School ID
 
     Returns:
         str: HTML 内容
@@ -340,34 +340,34 @@ def generate_html(first_name, last_name, school_id='2565'):
 
 def generate_image(first_name, last_name, school_id='2565'):
     """
-    生成 Penn State LionPATH 截图 PNG
+    Generate Penn State LionPATH screenshot PNG
 
     Args:
-        first_name: 名字
-        last_name: 姓氏
-        school_id: 学校 ID
+        first_name: First name
+        last_name: Last name
+        school_id: School ID
 
     Returns:
-        bytes: PNG 图片数据
+        bytes: PNG Image data
     """
     try:
         from playwright.sync_api import sync_playwright
 
-        # 生成 HTML
+        # Generate HTML
         html_content = generate_html(first_name, last_name, school_id)
 
-        # 使用 Playwright 截图（替代 Selenium）
+        # Use Playwright for screenshot (replaces Selenium)
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page(viewport={'width': 1200, 'height': 900})
             page.set_content(html_content, wait_until='load')
-            page.wait_for_timeout(500)  # 等待样式加载
+            page.wait_for_timeout(500)  # Wait for styles to load
             screenshot_bytes = page.screenshot(type='png', full_page=True)
             browser.close()
 
         return screenshot_bytes
 
     except ImportError:
-        raise Exception("需要安装 playwright: pip install playwright && playwright install chromium")
+        raise Exception("Playwright installation required: pip install playwright && playwright install chromium")
     except Exception as e:
-        raise Exception(f"生成图片失败: {str(e)}")
+        raise Exception(f"Failed to generate image: {str(e)}")
