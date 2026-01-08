@@ -21,10 +21,15 @@ logger = logging.getLogger(__name__)
 class SheerIDVerifier:
     """SheerID 学生身份验证器 (Cursor.com)"""
 
-    def __init__(self, verification_id: str):
+    def __init__(self, verification_id: str, proxy: Optional[str] = None):
         self.verification_id = verification_id
         self.device_fingerprint = self._generate_device_fingerprint()
-        self.http_client = httpx.Client(timeout=30.0)
+        # Support optional proxy for environments with network restrictions
+        client_kwargs = {"timeout": 30.0}
+        if proxy:
+            # httpx uses 'proxy' parameter (singular), not 'proxies'
+            client_kwargs["proxy"] = proxy
+        self.http_client = httpx.Client(**client_kwargs)
 
     def __del__(self):
         if hasattr(self, "http_client"):
@@ -256,6 +261,7 @@ class SheerIDVerifier:
 def main():
     """主函数 - 命令行界面"""
     import sys
+    import os
 
     print("=" * 60)
     print("SheerID 学生身份验证工具 - Cursor.com (Python版)")
@@ -271,10 +277,16 @@ def main():
         print("❌ 错误: 未提供 URL")
         sys.exit(1)
 
+    # Support optional proxy via environment variable
+    proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('HTTP_PROXY')
+    if proxy:
+        print(f"🔧 使用代理: {proxy}")
+        print()
+
     verification_id = SheerIDVerifier.parse_verification_id(url)
     user_id = SheerIDVerifier.parse_user_id(url)
     
-    verifier = SheerIDVerifier(verification_id or "")
+    verifier = SheerIDVerifier(verification_id or "", proxy=proxy)
     
     if not verification_id and user_id:
         print(f"✅ 解析到 userId: {user_id}")
