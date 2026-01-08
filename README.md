@@ -29,6 +29,7 @@
 | `/verify3` | Spotify Student | 学生认证 | ✅ 完整 | Spotify 学生订阅优惠 |
 | `/verify4` | Bolt.new Teacher | 教师认证 | ✅ 完整 | Bolt.new 教育优惠（自动获取 code）|
 | `/verify5` | YouTube Premium Student | 学生认证 | ⚠️ 半成品 | YouTube Premium 学生优惠（见下方说明）|
+| `/verify6` | Cursor.com Student | 学生认证 | ✅ 完整 | Cursor.com 学生订阅优惠 |
 
 > **⚠️ YouTube 认证特别说明**：
 > 
@@ -165,6 +166,7 @@ docker run -d \
 /verify3 <链接>     # Spotify Student 认证
 /verify4 <链接>     # Bolt.new Teacher 认证
 /verify5 <链接>     # YouTube Premium Student 认证
+/verify6 <链接>     # Cursor.com Student 认证
 /getV4Code <id>     # 获取 Bolt.new 认证码
 /help               # 查看帮助信息
 ```
@@ -186,11 +188,12 @@ docker run -d \
 1. **获取认证链接**
    - 访问对应服务的认证页面
    - 开始认证流程
-   - 复制浏览器地址栏中的完整 URL（包含 `verificationId`）
+   - 复制浏览器地址栏中的完整 URL（包含 `verificationId` 或 `userId`）
 
 2. **提交认证请求**
    ```
    /verify3 https://services.sheerid.com/verify/xxx/?verificationId=yyy
+   /verify6 https://services.sheerid.com/verify/xxx/?userId=yyy
    ```
 
 3. **等待处理**
@@ -201,6 +204,13 @@ docker run -d \
 4. **获取结果**
    - 审核通常在几分钟内完成
    - 成功后会返回跳转链接
+
+> **💡 Cursor.com 认证说明**：
+> 
+> Cursor.com 使用 `userId` 参数而非标准的 `verificationId` 参数。机器人会自动识别并处理这种格式：
+> - URL 格式：`https://services.sheerid.com/verify/681044b7729fba7beccd3565/?userId=user_01XXXX`
+> - 使用命令：`/verify6 <完整URL>`
+> - 机器人会自动创建验证会话并完成认证流程
 
 ---
 
@@ -225,6 +235,7 @@ tgbot-verify/
 ├── spotify/                # Spotify Student 认证模块
 ├── youtube/                # YouTube Premium 认证模块
 ├── Boltnew/                # Bolt.new 认证模块
+├── cursor/                 # Cursor.com 认证模块
 ├── military/               # ChatGPT 军人认证思路文档
 └── utils/                  # 工具函数
     ├── messages.py         # 消息模板
@@ -276,6 +287,7 @@ REGISTER_REWARD = 1    # 注册奖励积分
 - `spotify/config.py` - **Spotify Student** 认证（需更新 `PROGRAM_ID`）
 - `youtube/config.py` - **YouTube Premium Student** 认证（需更新 `PROGRAM_ID`）
 - `Boltnew/config.py` - Bolt.new Teacher 认证（建议检查 `PROGRAM_ID`）
+- `cursor/config.py` - **Cursor.com Student** 认证（需更新 `PROGRAM_ID`）
 
 **如何获取最新的 programId**：
 1. 访问对应服务的认证页面
