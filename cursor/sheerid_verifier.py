@@ -90,7 +90,7 @@ class SheerIDVerifier:
                 raise Exception(f"Failed to create verification (Status码 {status}): {data}")
             
             self.verification_id = data["verificationId"]
-            logger.info(f"✅ 获取 verificationId: {self.verification_id}")
+            logger.info(f"✅ Got verificationId: {self.verification_id}")
             return self.verification_id
         except Exception as e:
             logger.error(f"Failed to create verification: {e}")
@@ -164,10 +164,10 @@ class SheerIDVerifier:
             logger.info("Step 1/4: Generate student ID card PNG...")
             img_data = generate_image(first_name, last_name, school_id)
             file_size = len(img_data)
-            logger.info(f"✅ PNG 大小: {file_size / 1024:.2f}KB")
+            logger.info(f"✅ PNG size: {file_size / 1024:.2f}KB")
 
-            # 提交Student info
-            logger.info("Step 2/4: 提交Student info...")
+            # Submit Student info
+            logger.info("Step 2/4: Submit Student info...")
             step2_body = {
                 "firstName": first_name,
                 "lastName": last_name,
@@ -202,20 +202,23 @@ class SheerIDVerifier:
                 error_msg = ", ".join(step2_data.get("errorIds", ["Unknown error"]))
                 raise Exception(f"Step 2 错误: {error_msg}")
 
-            logger.info(f"✅ Step 2 完成: {step2_data.get('currentStep')}")
+            logger.info(f"✅ Step 2 completed: {step2_data.get('currentStep')}")
             current_step = step2_data.get("currentStep", current_step)
 
-            # 跳过 SSO（如需要）
+            # Skip SSO (if needed)
             if current_step in ["sso", "collectStudentPersonalInfo"]:
                 logger.info("Step 3/4: Skip SSO verification...")
                 step3_data, _ = self._sheerid_request(
                     "DELETE",
                     f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/sso",
                 )
-                logger.info(f"✅ Step 3 完成: {step3_data.get('currentStep')}")
+                logger.info(f"✅ Step 3 completed: {step3_data.get('currentStep')}")
                 current_step = step3_data.get("currentStep", current_step)
 
-            # 上传文档并完成提交
+            # Log current step before document upload
+            logger.info(f"Current step before docUpload: {current_step}")
+            
+            # Upload document and complete submission
             logger.info("Step 4/4: Request and upload document...")
             step4_body = {
                 "files": [
@@ -227,8 +230,17 @@ class SheerIDVerifier:
                 f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/docUpload",
                 step4_body,
             )
+            
+            # Check status and log detailed error
+            if step4_status != 200:
+                error_msg = step4_data.get("message", str(step4_data)) if isinstance(step4_data, dict) else str(step4_data)
+                logger.error(f"Step 4 failed with status {step4_status}: {error_msg}")
+                logger.error(f"Current step before upload: {current_step}")
+                raise Exception(f"Failed to get upload URL (Status {step4_status}): {error_msg}")
+            
             if not step4_data.get("documents"):
-                raise Exception("未能获取上传 URL")
+                logger.error(f"No documents in response: {step4_data}")
+                raise Exception("Failed to obtain upload URL")
 
             upload_url = step4_data["documents"][0]["uploadUrl"]
             logger.info("✅ Get upload URL success")
