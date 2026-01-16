@@ -218,12 +218,41 @@ class SheerIDVerifier:
             # Skip idCheckLoop if present (automatic identity verification step)
             if current_step == "idCheckLoop":
                 logger.info("Step 3.5/4: Skip idCheckLoop (automatic check)...")
-                step3_5_data, _ = self._sheerid_request(
-                    "DELETE",
-                    f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/idCheckLoop",
-                )
-                logger.info(f"✅ idCheckLoop skipped: {step3_5_data.get('currentStep')}")
-                current_step = step3_5_data.get("currentStep", current_step)
+                try:
+                    step3_5_data, step3_5_status = self._sheerid_request(
+                        "DELETE",
+                        f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}/step/idCheckLoop",
+                    )
+                    if step3_5_status == 200:
+                        logger.info(f"✅ idCheckLoop skipped: {step3_5_data.get('currentStep')}")
+                        current_step = step3_5_data.get("currentStep", current_step)
+                    elif step3_5_status == 404:
+                        # idCheckLoop may have auto-completed, get current status
+                        logger.info("idCheckLoop step not found (may have auto-completed), fetching current status...")
+                        status_data, status_code = self._sheerid_request(
+                            "GET",
+                            f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}",
+                        )
+                        if status_code == 200:
+                            current_step = status_data.get("currentStep", current_step)
+                            logger.info(f"✅ Current step after idCheckLoop: {current_step}")
+                        else:
+                            logger.warning(f"Failed to fetch status (404 on DELETE): {status_data}")
+                    else:
+                        logger.warning(f"Unexpected status {step3_5_status} when skipping idCheckLoop: {step3_5_data}")
+                except Exception as e:
+                    logger.warning(f"Failed to skip idCheckLoop (will continue): {e}")
+                    # Try to get current status
+                    try:
+                        status_data, status_code = self._sheerid_request(
+                            "GET",
+                            f"{config.SHEERID_BASE_URL}/rest/v2/verification/{self.verification_id}",
+                        )
+                        if status_code == 200:
+                            current_step = status_data.get("currentStep", current_step)
+                            logger.info(f"Current step after error: {current_step}")
+                    except:
+                        pass
 
             # Log current step before document upload
             logger.info(f"Current step before docUpload: {current_step}")
