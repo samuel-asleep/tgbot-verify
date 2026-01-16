@@ -1,4 +1,4 @@
-"""管理员命令处理器"""
+"""Admin command handlers"""
 import asyncio
 import logging
 from datetime import datetime
@@ -7,7 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import ADMIN_USER_ID
-from database_mysql import Database
+from database_sqlite import Database
 from utils.checks import reject_group_command
 
 logger = logging.getLogger(__name__)
